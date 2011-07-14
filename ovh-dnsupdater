@@ -1,0 +1,192 @@
+#!/usr/bin/php
+<?php
+
+// Parse user-specified options
+$programName = array_shift($argv);
+$options = array(
+	'hard'      => FALSE,
+	'h'         => FALSE,
+	'help'      => FALSE,
+	'dry-run'   => FALSE,
+	'conf-file' => '/etc/ovh-dnsupdater',
+);
+foreach ($argv as $arg) {
+	$arg = trim($arg, '- ');
+
+	$value = TRUE;
+	$pos = strrpos($arg, '=');
+	if ($pos !== FALSE) {
+		$value = substr($arg, $pos+1);
+		$arg   = substr($arg, 0, $pos);
+	}
+	$options[$arg] = $value;
+}
+
+if ($options['help']) {
+	echo <<<EOD
+Usage: 
+  $programName [options]
+Options:
+  --conf-file=<file>
+	Load the configuration from file <file> instead of /etc/ovh-dnsupdater
+  --dry-run    
+	Just show what would be done, without actually doing anything.
+  -h, --help   
+	Show this help message.
+  --hard       
+	Foce downloading the list of already setup domains using the API.
+
+
+EOD;
+	exit(0);
+}
+
+// Load the configuration file
+$conf = parse_ini_file($options['conf-file'], true);
+$conf['paths']['setup_domains'] = $conf['paths']['data'] . '/domains';
+ini_set('soap.wsdl_cache_dir', $conf['paths']['data']);
+
+$updater = new DnsUpdater($conf['soapi']['url'], $conf['soapi']['nic'], $conf['soapi']['password'], 
+	$conf['server']['hostname'], $conf['server']['ip'], $conf['backup_dns']['hostname'], 
+	$conf['backupdns']['ip']);
+
+openlog($conf['syslog']['prefix'], LOG_CONS | LOG_PID, LOG_DAEMON);
+
+
+if ($options['dry-run']) {
+	syslog(LOG_NOTICE, "Dry-run specified, the following actions will NOT be really processed.");
+}
+
+// Fetch the previous (old) list of domains already setup
+if ($options['hard']) {
+	$old = $updater->getDomains();
+} else {
+	$old = array_map("trim", file($conf['paths']['setup_domains']));
+}
+
+// Fetch the current (new) list of defined zones (domains)
+if (!is_dir($conf['paths']['zones'])) {
+	syslog(LOG_ERROR, 'The configured path to the zones is not a directory');
+	exit(1);
+}
+$new = array();
+$fh = opendir($conf['paths']['zones']);
+if (!$fh) {
+	syslog(LOG_ERROR, 'Unable to open the zones directory');
+	exit(1);
+}
+while (($file = readdir($fh)) !== FALSE) {
+	if ($file == '.' || $file == '..') {
+		continue;
+	}
+	$pos = strrpos($file, $conf['paths']['zone_suffix']);
+	if ($pos !== FALSE) {
+		$new[] = trim(substr($file, 0, $pos));
+	}
+}
+
+// Compute the differences and add/remove domains as needed
+$removed = array_diff($old, $new);
+$added = array_diff($new, $old);
+
+foreach($removed as $domain) {
+	$domain = trim($domain);
+	try {
+		if (!$options['dry-run']) {
+			$updater->removeDomain($domain);
+		}
+		syslog(LOG_NOTICE, 'Removed domain ' . $domain . ' from the secondary DNS server');
+	} catch(SoapFault $fault) {
+		syslog(LOG_NOTICE, 'Failed to remove domain ' . $domain . ' from the secondary DNS server: ' . $fault->getMessage());
+	}
+}
+foreach($added as $domain) {
+	$domain = trim($domain);
+	try {
+		if (!$options['dry-run']) {
+			$updater->addDomain($domain);
+		}
+		syslog(LOG_NOTICE, 'Added domain ' . $domain . ' to the secondary DNS server');
+	} catch(SoapFault $fault) {
+		syslog(LOG_NOTICE, 'Failed to add domain ' . $domain . ' to the secondary DNS server: ' . $fault->getMessage());
+	}
+}
+
+// Save the current list of configured domains
+print_r($new);
+file_put_contents($conf['paths']['setup_domains'], implode("\n", $new) . "\n");
+
+class DnsUpdater {
+	private $_url;
+	private $_user;
+	private $_pass;
+
+	private $_host;
+	private $_ip;
+	private $_dnshost;
+	private $_dnsip;
+
+	private $_soap = false;
+	private $_session = false;
+
+	public function __construct($url, $user, $pass, $host, $ip, $dnshost, $dnsip) {
+		$this->_url  = $url;
+		$this->_user = $user;
+		$this->_pass = $pass;
+
+		$this->_host = $host;
+		$this->_ip   = $ip;
+		$this->_dnshost = $dnshost;
+		$this->_dnsip = $dnsip;
+	}
+
+	public function __destruct() {
+		$this->logout();
+	}
+
+	protected function login() {
+		if ($this->_soap && $this->_session) {
+			return;
+		}
+		try {
+			$this->_soap = new SoapClient($this->_url);
+			$this->_session = $this->_soap->login($this->_user, $this->_pass, "en", false);
+		} catch (Exception $e) {
+			syslog(LOG_ERROR, "Unable to login: " . $e->getMessage());
+			exit(1);
+		}
+	}
+
+	protected function logout() {
+		if (!($this->_soap && $this->_session)) {
+			return;
+		}
+
+		$this->_soap->logout($this->_session);
+	}
+
+	public function addDomain($domain) {
+		$this->login();
+		$this->_soap->dedicatedSecondaryDNSAdd($this->_session, $this->_host, $this->_ip, $domain, $this->_dnshost, $this->_dnsip);
+	}
+
+	public function removeDomain($domain) {
+		$this->login();
+		$this->_soap->dedicatedSecondaryDNSDel($this->_session, $this->_host, $this->_ip, $domain, $this->_dnshost, $this->_dnsip);
+	}
+
+	public function getDomains() {
+		$this->login();
+
+		$domains = array();
+		$result = $this->_soap->dedicatedSecondaryDNSGetAll($this->_session, $this->_host);
+		foreach ($result as $ip) {
+			foreach ($ip->secondary as $zone) {
+				if ($zone->state == 'ACTIVE') {
+					$domains[] = trim($zone->zone);
+				}
+			}
+		}
+		return $domains;
+	}
+}

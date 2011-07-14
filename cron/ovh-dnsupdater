@@ -1,0 +1,6 @@
+# ovh-dnsupdater: crontab fragment for updating secondary dns server zones
+#
+#min    hour    day     month   dayofweek   user   command
+*/5     *       *       *       *  root /usr/sbin/ovh-dnsupdater
+7       2       *       *       *  root /usr/sbin/ovh-dnsupdater --hard
+
