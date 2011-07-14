@@ -2,6 +2,13 @@
 
 Ovh-dnsupdater is a small utility to automate the addition and removal of domains to the (free) secondary DNS server offered by OVH.
 
+## Requirements ##
+
+The utility is written in php (so you need the cli version of php). Additionally, you must have the soap extension. In short:
+
+	php >= 5.1
+	php-soap >= 5.1
+
 ## Installing ##
 
 To install ovh-dnsupdater it is necessary to perform three basic steps:
