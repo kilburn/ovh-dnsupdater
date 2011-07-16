@@ -50,3 +50,33 @@ Alternatively, some systems allow you to define cronjob tasks by creating files 
 	cp cron/ovh-dnsupdater /etc/cron.d/ovh-dnsupdater
 	chmod 755 /etc/cron.d/ovh-dnsupdater
 
+## Ovh-dnsupdater usage ##
+
+	Usage: 
+	  ./ovh-dnsupdater [options]
+	Options:
+	  --conf-file=<file>
+		Load the configuration from file <file> instead of /etc/ovh-dnsupdater
+	  --dry-run    
+		Just show what would be done, without actually doing anything.
+	  -h, --help   
+		Show this help message.
+	  --hard       
+		Foce downloading the list of already setup domains using the API.
+
+## How it works ##
+
+Ovh-dnsupdater works by monitoring your bind's zone folder, and updating ovh's secondary server setup whenever a change is detected. Essentially, each tiem that the utility runs, it performs the following steps:
+
+ 1. Fetch the list of domains that ovh knows about
+ 2. Fetch the list of localy setup domains
+ 3. Compute the difference between these lists
+ 4. Add/Remove domains so that both lists end up synchronized
+
+The first step may be done in two different ways, depending on if the "hard" option has been specified or not. When in "hard" mode, the list of domains that ovh knows about is fetched using the SOAPI. In contrast, when "hard" is not specified, the utility simply loads the list as cached by the last time it ran.
+
+## To Do ##
+
+The major limitation known at the time of this writing is that ovh-dnsupdater is not able to work with multiple secondary dns servers. Therefore, if you have domains setup using different secondary servers (sdns1.ovh.net and sdns2.ovh.net) and want to use this utility, you will have to re-configure the domains so that they all use the same backup server. This limitation will be fixed if someone requests me to do so.
+
+Another possible point of improvement is that of logging. Specifically, it would be interesting to log to stdout when configuring/testing the utility, to avoid the additional step of having to look at the system's log file. Additionally, it would be interesting to give a configuration option that made the utility output any changes done to stdout, so that the admin is notified by the resulting cron mail.
