@@ -113,7 +113,6 @@ foreach($added as $domain) {
 }
 
 // Save the current list of configured domains
-print_r($new);
 file_put_contents($conf['paths']['setup_domains'], implode("\n", $new) . "\n");
 
 class DnsUpdater {
