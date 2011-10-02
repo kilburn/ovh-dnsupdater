@@ -151,7 +151,7 @@ class DnsUpdater {
 			$this->_soap = new SoapClient($this->_url);
 			$this->_session = $this->_soap->login($this->_user, $this->_pass, "en", false);
 		} catch (Exception $e) {
-			syslog(LOG_ERROR, "Unable to login: " . $e->getMessage());
+			syslog(LOG_ERR, "Unable to login: " . $e->getMessage());
 			exit(1);
 		}
 	}
