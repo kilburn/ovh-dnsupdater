@@ -66,13 +66,13 @@ if ($options['hard']) {
 
 // Fetch the current (new) list of defined zones (domains)
 if (!is_dir($conf['paths']['zones'])) {
-	syslog(LOG_ERROR, 'The configured path to the zones is not a directory');
+	syslog(LOG_ERR, 'The configured path to the zones is not a directory');
 	exit(1);
 }
 $new = array();
 $fh = opendir($conf['paths']['zones']);
 if (!$fh) {
-	syslog(LOG_ERROR, 'Unable to open the zones directory');
+	syslog(LOG_ERR, 'Unable to open the zones directory');
 	exit(1);
 }
 while (($file = readdir($fh)) !== FALSE) {
