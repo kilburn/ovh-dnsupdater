@@ -1,4 +1,4 @@
-# Automatically manage OVH Seocondary server #
+# Automatically manage OVH Secondary server #
 
 Ovh-dnsupdater is a small utility to automate the addition and removal of domains to the (free) secondary DNS server offered by OVH.
 
@@ -15,7 +15,7 @@ To install ovh-dnsupdater it is necessary to perform three basic steps:
 
 ### Install the required files ###
 
-First of all, you should copy the required files into appropiate locations in your filesystem. You can change the routes displayed here so long as you update the configuration file accordingly.
+First of all, you should copy the required files into appropriate locations in your filesystem. You can change the routes displayed here so long as you update the configuration file accordingly.
 
 	cp etc/ovh-dnsupdater /etc/ovh-dnsupdater
 	chmod 640 /etc/ovh-dnsupdater
@@ -26,9 +26,9 @@ First of all, you should copy the required files into appropiate locations in yo
 
 ### Setup the utility ###
 
-The next step is to modify the configuration file to reflect your ovh soapi credentials, and the details of your server. All these settings are found in the /etc/ovh-dnsupdater (or wherever you have put the configuration) file.
+The next step is to modify the configuration file to reflect your OVH's SOAPI credentials, and the details of your server. All these settings are found in the /etc/ovh-dnsupdater (or wherever you have put the configuration) file.
 
-### First run and cronjob setup ###
+### First run and cronjob setup ###
 
 Next, you have to "hard" run the utility manually so that it catches all your already setup domains. It is recommended that you perform a dry run at this (the utility logs what would be done, but does nothing) to avoid breaking anything:
 
@@ -50,7 +50,7 @@ Alternatively, some systems allow you to define cronjob tasks by creating files 
 	cp cron/ovh-dnsupdater /etc/cron.d/ovh-dnsupdater
 	chmod 755 /etc/cron.d/ovh-dnsupdater
 
-## Ovh-dnsupdater usage ##
+## Ovh-dnsupdater usage ##
 
 	Usage: 
 	  ./ovh-dnsupdater [options]
@@ -62,21 +62,21 @@ Alternatively, some systems allow you to define cronjob tasks by creating files 
 	  -h, --help   
 		Show this help message.
 	  --hard       
-		Foce downloading the list of already setup domains using the API.
+		Force downloading the list of already setup domains using the API.
 
-## How it works ##
+## How it works ##
 
-Ovh-dnsupdater works by monitoring your bind's zone folder, and updating ovh's secondary server setup whenever a change is detected. Essentially, each tiem that the utility runs, it performs the following steps:
+Ovh-dnsupdater works by monitoring your bind's zone folder, and updating OVH's secondary server setup whenever a change is detected. Essentially, each time that the utility runs, it performs the following steps:
 
- 1. Fetch the list of domains that ovh knows about
- 2. Fetch the list of localy setup domains
+ 1. Fetch the list of domains that OVH knows about
+ 2. Fetch the list of locally setup domains
  3. Compute the difference between these lists
  4. Add/Remove domains so that both lists end up synchronized
 
 The first step may be done in two different ways, depending on if the "hard" option has been specified or not. When in "hard" mode, the list of domains that ovh knows about is fetched using the SOAPI. In contrast, when "hard" is not specified, the utility simply loads the list as cached by the last time it ran.
 
-## To Do ##
+## To Do ##
 
-The major limitation known at the time of this writing is that ovh-dnsupdater is not able to work with multiple secondary dns servers. Therefore, if you have domains setup using different secondary servers (sdns1.ovh.net and sdns2.ovh.net) and want to use this utility, you will have to re-configure the domains so that they all use the same backup server. This limitation will be fixed if someone requests me to do so.
+The major limitation known at the time of this writing is that ovh-dnsupdater is not able to work with multiple secondary DNS servers. Therefore, if you have domains setup using different secondary servers (sdns1.ovh.net and sdns2.ovh.net) and want to use this utility, you will have to re-configure the domains so that they all use the same backup server. This limitation will be fixed if someone requests me to do so.
 
 Another possible point of improvement is that of logging. Specifically, it would be interesting to log to stdout when configuring/testing the utility, to avoid the additional step of having to look at the system's log file. Additionally, it would be interesting to give a configuration option that made the utility output any changes done to stdout, so that the admin is notified by the resulting cron mail.

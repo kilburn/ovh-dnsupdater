@@ -34,7 +34,7 @@ Options:
   -h, --help   
 	Show this help message.
   --hard       
-	Foce downloading the list of already setup domains using the API.
+	Force downloading the list of already setup domains using the API.
 
 
 EOD;
