@@ -11,7 +11,7 @@ hostname = nsXXXX.ovh.net
 ip       = xxx.xxx.xxx.xxx
 
 [backup_dns]
-hostname = snds2.ovh.net
+hostname = sdns2.ovh.net
 ip       = 213.251.188.141
 
 [paths]

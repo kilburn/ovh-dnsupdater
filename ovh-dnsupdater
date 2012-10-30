@@ -48,7 +48,7 @@ ini_set('soap.wsdl_cache_dir', $conf['paths']['data']);
 
 $updater = new DnsUpdater($conf['soapi']['url'], $conf['soapi']['nic'], $conf['soapi']['password'], 
 	$conf['server']['hostname'], $conf['server']['ip'], $conf['backup_dns']['hostname'], 
-	$conf['backupdns']['ip']);
+	$conf['backup_dns']['ip']);
 
 openlog($conf['syslog']['prefix'], LOG_CONS | LOG_PID, LOG_DAEMON);
 
